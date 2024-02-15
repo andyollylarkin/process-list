@@ -2,18 +2,18 @@ package ps
 
 import "gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
 
-func ListProcess() ([]*pkg.Process, error) {
-	return pkg.ListProcess()
+func ListProcess(reader pkg.DirReader) ([]*pkg.Process, error) {
+	return pkg.ListProcess(reader)
 }
 
-func FindProcessByNameContains(namePath string) ([]*pkg.Process, error) {
-	return pkg.FindProcessByNameContains(namePath)
+func FindProcessByNameContains(reader pkg.DirReader, namePath string) ([]*pkg.Process, error) {
+	return pkg.FindProcessByNameContains(reader, namePath)
 }
 
-func FindProcessByNameEqual(name string) ([]*pkg.Process, error) {
-	return pkg.FindProcessByNameEqual(name)
+func FindProcessByNameEqual(reader pkg.DirReader, name string) ([]*pkg.Process, error) {
+	return pkg.FindProcessByNameEqual(reader, name)
 }
 
-func FindProcessByPid(pid int) (*pkg.Process, error) {
-	return pkg.FindProcessByPid(pid)
+func FindProcessByPid(reader pkg.DirReader, pid int) (*pkg.Process, error) {
+	return pkg.FindProcessByPid(reader, pid)
 }

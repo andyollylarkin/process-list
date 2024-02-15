@@ -2,20 +2,14 @@ package pkg
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-type Process struct {
-	*os.Process
-	Name string
-}
-
-func ListProcess() ([]*Process, error) {
+func ListProcess(reader DirReader) ([]*Process, error) {
 	res := make([]*Process, 0)
-	content, err := os.ReadDir("/proc")
+	content, err := reader.ReadDir("/proc")
 	if err != nil {
 		return nil, err
 	}
@@ -26,27 +20,23 @@ func ListProcess() ([]*Process, error) {
 			continue
 		}
 		path := filepath.Join("/proc", d.Name(), "exe")
-		exeName, err := os.Readlink(path)
-		if err != nil {
-			continue
-		}
-		proc, err := os.FindProcess(int(pid))
+		exeName, err := reader.ReadLink(path)
 		if err != nil {
 			continue
 		}
 
 		res = append(res, &Process{
-			Process: proc,
-			Name:    filepath.Base(exeName),
+			Pid:  int(pid),
+			Name: filepath.Base(exeName),
 		})
 	}
 
 	return res, nil
 }
 
-func FindProcessByNameContains(namePath string) ([]*Process, error) {
+func FindProcessByNameContains(reader DirReader, namePath string) ([]*Process, error) {
 	res := make([]*Process, 0)
-	procs, err := ListProcess()
+	procs, err := ListProcess(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +50,9 @@ func FindProcessByNameContains(namePath string) ([]*Process, error) {
 	return res, nil
 }
 
-func FindProcessByNameEqual(name string) ([]*Process, error) {
+func FindProcessByNameEqual(reader DirReader, name string) ([]*Process, error) {
 	res := make([]*Process, 0)
-	procs, err := ListProcess()
+	procs, err := ListProcess(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +66,8 @@ func FindProcessByNameEqual(name string) ([]*Process, error) {
 	return res, nil
 }
 
-func FindProcessByPid(pid int) (*Process, error) {
-	procs, err := ListProcess()
+func FindProcessByPid(reader DirReader, pid int) (*Process, error) {
+	procs, err := ListProcess(reader)
 	if err != nil {
 		return nil, err
 	}
