@@ -20,18 +20,18 @@ type sshDirEntry struct {
 // This name is only the final element of the path (the base name), not the entire path.
 // For example, Name would return "hello.go" not "home/gopher/hello.go".
 func (e sshDirEntry) Name() string {
-	return e.Name()
+	return e.fi.Name()
 }
 
 // IsDir reports whether the entry describes a directory.
 func (e sshDirEntry) IsDir() bool {
-	return e.IsDir()
+	return e.fi.IsDir()
 }
 
 // Type returns the type bits for the entry.
 // The type bits are a subset of the usual FileMode bits, those returned by the FileMode.Type method.
 func (e sshDirEntry) Type() fs.FileMode {
-	return e.Type()
+	return e.fi.Mode().Type()
 }
 
 // Info returns the FileInfo for the file or subdirectory described by the entry.
