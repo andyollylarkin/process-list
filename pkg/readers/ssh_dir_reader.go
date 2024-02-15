@@ -1,9 +1,15 @@
 package readers
 
 import (
+	"errors"
+	"fmt"
 	"io/fs"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 type sshDirEntry struct {
@@ -42,8 +48,20 @@ type SshDirReader struct {
 	client *sftp.Client
 }
 
-func NewSshDirReader(client *sftp.Client) *SshDirReader {
-	return &SshDirReader{client: client}
+func NewSshDirReader(user, pass string, privateKey []byte, privateKeyPass []byte, privKeyPath string,
+	host string, port int,
+) (*SshDirReader, error) {
+	sshClient, err := newSshClient(user, pass, privateKey, privateKeyPass, privKeyPath, host, port, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	sftpClient, err := sftp.NewClient(sshClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SshDirReader{client: sftpClient}, nil
 }
 
 func (r *SshDirReader) ReadDir(dirName string) ([]fs.DirEntry, error) {
@@ -63,4 +81,78 @@ func (r *SshDirReader) ReadDir(dirName string) ([]fs.DirEntry, error) {
 
 func (r *SshDirReader) ReadLink(name string) (string, error) {
 	return r.client.ReadLink(name)
+}
+
+func newSshClient(user string, pass string, privKey []byte, privKeyPass []byte, privKeyPath string,
+	host string, port int, timeout int,
+) (*ssh.Client, error) {
+	var authMethod []ssh.AuthMethod
+
+	var err error
+
+	if host == "" {
+		err = errors.New("host is not specified")
+
+		return nil, err
+	}
+
+	if pass == "" && privKey == nil && privKeyPath == "" {
+		return nil, errors.New("one of private key, password or path to private key file should be specified")
+	}
+
+	if privKeyPath != "" {
+		privKey, _ = getPrivKey(privKeyPath)
+	}
+
+	// If key specified
+	if len(privKey) > 0 {
+		signer, err := privKeyHandle(privKey, privKeyPass)
+		if err == nil {
+			authMethod = append(authMethod, ssh.PublicKeys(signer))
+		}
+	}
+
+	if pass != "" {
+		authMethod = append(authMethod, ssh.Password(pass))
+	}
+
+	if len(authMethod) < 1 {
+		return nil, errors.New("no authentication methods available")
+	}
+
+	config := &ssh.ClientConfig{
+		User:            user,
+		Auth:            authMethod,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         time.Duration(timeout) * time.Second,
+	}
+
+	config.SetDefaults()
+
+	addr := fmt.Sprintf("%s:%d", host, port)
+
+	client, err := ssh.Dial("tcp", addr, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+func getPrivKey(pk string) ([]byte, error) {
+	key, err := os.ReadFile(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+func privKeyHandle(pk []byte, passphrase []byte) (signer ssh.Signer, err error) {
+	signer, err = ssh.ParsePrivateKey(pk)
+	if err != nil && strings.Contains(err.Error(), "this private key is passphrase protected") {
+		signer, err = ssh.ParsePrivateKeyWithPassphrase(pk, passphrase)
+	}
+
+	return
 }
