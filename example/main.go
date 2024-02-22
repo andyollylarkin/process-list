@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	l := listers.NewWindowsSmbProcessLister("/opt/mind/bin/winexe", "admin", "Qwerty12344", "192.168.122.229", 445)
+	l := listers.NewLinuxSshProcessLister("root", "12344", nil, nil, "", "192.168.122.166", 22)
 
 	p, err := ps.ListProcess(l)
 	if err != nil {

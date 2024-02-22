@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -10,7 +9,7 @@ import (
 
 func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 	res := make([]pkg.Process, 0)
-	content, err := os.ReadDir("/proc")
+	content, err := reader.ReadDir("/proc")
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +20,7 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 			continue
 		}
 		path := filepath.Join("/proc", d.Name(), "exe")
-		exeName, err := os.Readlink(path)
+		exeName, err := reader.ReadLink(path)
 		if err != nil {
 			continue
 		}
