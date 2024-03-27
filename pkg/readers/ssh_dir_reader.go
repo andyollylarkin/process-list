@@ -3,6 +3,7 @@ package readers
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"strings"
@@ -81,6 +82,21 @@ func (r *SshDirReader) ReadDir(dirName string) ([]fs.DirEntry, error) {
 
 func (r *SshDirReader) ReadLink(name string) (string, error) {
 	return r.client.ReadLink(name)
+}
+
+func (r *SshDirReader) ReadFile(filePath string) (string, error) {
+	file, err := r.client.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+
 }
 
 func newSshClient(user string, pass string, privKey []byte, privKeyPass []byte, privKeyPath string,

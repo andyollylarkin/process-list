@@ -9,14 +9,16 @@ import (
 )
 
 func main() {
-	l := listers.NewLinuxSshProcessLister("root", "12344", nil, nil, "", "192.168.122.166", 22)
+	l := listers.NewLinuxSshProcessLister("core", "", nil, nil, "/Users/neekrasov/code/mind/files/id_rsa", "192.168.123.35", 22)
 
-	p, err := ps.ListProcess(l)
+	p, err := ps.FindProcessByNameEqual(l, "mind_agent")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, pp := range p {
-		fmt.Println(pp.Name, pp.Pid)
-	}
+	fmt.Println("Result:", p)
+
+	// for _, pp := range p {
+	// 	fmt.Printf("%s %d ", pp.Name, pp.Pid)
+	// }
 }

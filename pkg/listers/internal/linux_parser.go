@@ -3,6 +3,7 @@ package internal
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
 )
@@ -19,15 +20,15 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 		if err != nil {
 			continue
 		}
-		path := filepath.Join("/proc", d.Name(), "exe")
-		exeName, err := reader.ReadLink(path)
+		path := filepath.Join("/proc", d.Name(), "comm")
+		procName, err := reader.ReadFile(path)
 		if err != nil {
 			continue
 		}
 
 		res = append(res, pkg.Process{
 			Pid:  int(pid),
-			Name: filepath.Base(exeName),
+			Name: strings.ReplaceAll(procName, "\n", ""),
 		})
 	}
 
