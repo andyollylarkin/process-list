@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
+	"github.com/andyollylarkin/process-list/pkg"
 )
 
 func ParseWindows(executor Executor) ([]pkg.Process, error) {

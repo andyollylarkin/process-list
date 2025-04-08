@@ -1,6 +1,6 @@
 package ps
 
-import "gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
+import "github.com/andyollylarkin/process-list/pkg"
 
 func ListProcess(lister pkg.ProcessLister) ([]pkg.Process, error) {
 	return pkg.ListAllProcess(lister)

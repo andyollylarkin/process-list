@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/utils"
+	"github.com/andyollylarkin/process-list/pkg"
+	"github.com/andyollylarkin/process-list/utils"
 )
 
 func ParseLinux(reader DirReader) ([]pkg.Process, error) {

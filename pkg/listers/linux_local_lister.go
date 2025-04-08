@@ -1,9 +1,9 @@
 package listers
 
 import (
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg/listers/internal"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg/readers"
+	"github.com/andyollylarkin/process-list/pkg"
+	"github.com/andyollylarkin/process-list/pkg/listers/internal"
+	"github.com/andyollylarkin/process-list/pkg/readers"
 )
 
 type LinuxLocalProcessLister struct{}

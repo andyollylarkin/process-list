@@ -1,6 +1,6 @@
 package listers
 
-import "gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
+import "github.com/andyollylarkin/process-list/pkg"
 
 type WindowsLocalProcessLister struct{}
 

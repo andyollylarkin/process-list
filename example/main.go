@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	ps "gitlab.mindsw.io/migrate-core-libs/process-list"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg/listers"
+	ps "github.com/andyollylarkin/process-list"
+	"github.com/andyollylarkin/process-list/pkg/listers"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module gitlab.mindsw.io/migrate-core-libs/process-list
+module github.com/andyollylarkin/process-list
 
 go 1.20
 

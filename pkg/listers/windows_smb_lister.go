@@ -1,9 +1,9 @@
 package listers
 
 import (
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg/executors"
-	"gitlab.mindsw.io/migrate-core-libs/process-list/pkg/listers/internal"
+	"github.com/andyollylarkin/process-list/pkg"
+	"github.com/andyollylarkin/process-list/pkg/executors"
+	"github.com/andyollylarkin/process-list/pkg/listers/internal"
 )
 
 type configWin struct {
