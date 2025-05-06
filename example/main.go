@@ -5,21 +5,24 @@ import (
 	"log"
 
 	ps "github.com/andyollylarkin/process-list"
+	"github.com/andyollylarkin/process-list/pkg"
 	"github.com/andyollylarkin/process-list/pkg/listers"
 )
 
 func main() {
 	l := listers.NewLinuxLocalProcessLister()
 
-	p, err := ps.ListProcess(l)
+	p, err := ps.FindProcessByRegex(l, "^mds.+")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, pp := range p {
-		fmt.Printf("%s: %d\n", pp.Name, pp.Pid)
 		for _, ip := range pp.Net {
-			fmt.Printf("PsName: %s, PsPID: %d, Addr: %s\n", pp.Name, pp.Pid, ip.String())
+			if ip.State == pkg.SocketStateListen {
+				fmt.Printf("PsName: %s, PsPID: %d, Addr: %s\t, Network: %s \t , RawState: %s\t ,State: %s\n",
+					pp.Name, pp.Pid, ip.Addr.String(), ip.Network, ip.State, ip.State.String())
+			}
 		}
 	}
 }

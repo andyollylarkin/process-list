@@ -8,7 +8,7 @@ import (
 )
 
 func CoventHexIpToAddress(hexAddr string) (string, error) {
-	if len(hexAddr) != 8 {
+	if len(hexAddr) < 8 && len(hexAddr) < 33 {
 		return "", fmt.Errorf("invalid hex ip address format: invalid lenght")
 	}
 

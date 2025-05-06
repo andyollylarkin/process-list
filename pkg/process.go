@@ -2,8 +2,15 @@ package pkg
 
 import "net"
 
+type NetworkState struct {
+	Addr    net.Addr
+	State   SocketState
+	Network string
+}
+
 type Process struct {
 	Pid  int
 	Name string
-	Net  []net.Addr
+	Fds  []int
+	Net  []NetworkState
 }
