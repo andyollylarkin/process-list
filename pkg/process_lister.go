@@ -1,5 +1,5 @@
 package pkg
 
 type ProcessLister interface {
-	ListProcess() ([]Process, error)
+	ListProcess(DoneLookupFunc) ([]Process, error)
 }
