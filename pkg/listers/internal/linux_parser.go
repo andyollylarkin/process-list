@@ -13,7 +13,7 @@ import (
 	"github.com/andyollylarkin/process-list/utils"
 )
 
-func ParseLinux(reader DirReader, fn pkg.DoneLookupFunc) ([]pkg.Process, error) {
+func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 	res := make([]pkg.Process, 0)
 	content, err := reader.ReadDir("/proc")
 	if err != nil {
@@ -94,22 +94,12 @@ func ParseLinux(reader DirReader, fn pkg.DoneLookupFunc) ([]pkg.Process, error) 
 
 		allAddresses := append(append(addresses4, addresses6...), append(addressesUdp4, addressesUdp6...)...)
 
-		proc := pkg.Process{
+		res = append(res, pkg.Process{
 			Pid:  int(pid),
 			Name: strings.ReplaceAll(procName, "\n", ""),
 			Net:  allAddresses,
 			Fds:  fds,
-		}
-
-		if fn != nil {
-			if fn(proc) {
-				res = append(res, proc)
-
-				break
-			}
-		}
-
-		res = append(res, proc)
+		})
 	}
 
 	return res, nil

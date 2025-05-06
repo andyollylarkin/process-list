@@ -37,12 +37,12 @@ func NewLinuxSshProcessLister(user string, pass string, privateKey []byte, priva
 	}
 }
 
-func (l *LinuxSshProcessLister) ListProcess(fn pkg.DoneLookupFunc) ([]pkg.Process, error) {
+func (l *LinuxSshProcessLister) ListProcess() ([]pkg.Process, error) {
 	sshReader, err := readers.NewSshDirReader(l.cfg.user, l.cfg.pass, l.cfg.privateKey,
 		l.cfg.privateKeyPass, l.cfg.privKeyPath, l.cfg.host, l.cfg.port)
 	if err != nil {
 		return nil, err
 	}
 
-	return internal.ParseLinux(sshReader, fn)
+	return internal.ParseLinux(sshReader)
 }

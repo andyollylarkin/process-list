@@ -14,5 +14,3 @@ type Process struct {
 	Fds  []int
 	Net  []NetworkState
 }
-
-type DoneLookupFunc func(p Process) bool

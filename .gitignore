@@ -15,8 +15,6 @@
 *.out
 
 pslist
-*prof
-*png
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
@@ -27,6 +25,3 @@ example/ps
 
 *.swp
 .DS_Store
-
-.idea
-.vscode

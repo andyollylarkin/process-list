@@ -7,14 +7,12 @@ import (
 )
 
 func ListAllProcess(lister ProcessLister) ([]Process, error) {
-	return lister.ListProcess(nil)
+	return lister.ListProcess()
 }
 
 func FindProcessByNameContains(lister ProcessLister, namePath string) ([]Process, error) {
 	res := make([]Process, 0)
-	procs, err := lister.ListProcess(func(p Process) bool {
-		return strings.Contains(p.Name, namePath)
-	})
+	procs, err := ListAllProcess(lister)
 	if err != nil {
 		return nil, err
 	}
@@ -30,9 +28,7 @@ func FindProcessByNameContains(lister ProcessLister, namePath string) ([]Process
 
 func FindProcessByNameEqual(lister ProcessLister, name string) ([]Process, error) {
 	res := make([]Process, 0)
-	procs, err := lister.ListProcess(func(p Process) bool {
-		return p.Name == name
-	})
+	procs, err := ListAllProcess(lister)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +44,7 @@ func FindProcessByNameEqual(lister ProcessLister, name string) ([]Process, error
 
 func FindProcessByRegex(lister ProcessLister, regex regexp.Regexp) ([]Process, error) {
 	res := make([]Process, 0)
-	procs, err := lister.ListProcess(func(p Process) bool {
-		return regex.MatchString(p.Name)
-	})
+	procs, err := ListAllProcess(lister)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +59,7 @@ func FindProcessByRegex(lister ProcessLister, regex regexp.Regexp) ([]Process, e
 }
 
 func FindProcessByPid(lister ProcessLister, pid int) (Process, error) {
-	procs, err := lister.ListProcess(func(p Process) bool {
-		return p.Pid == pid
-	})
+	procs, err := ListAllProcess(lister)
 	if err != nil {
 		return Process{}, err
 	}
