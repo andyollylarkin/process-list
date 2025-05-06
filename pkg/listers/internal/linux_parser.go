@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,7 +33,7 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 
 		netPathTcp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp")
 
-		netFile, err := os.Open(netPathTcp4)
+		netFile, err := reader.Open(netPathTcp4)
 		if err != nil {
 			continue
 		}
@@ -44,7 +42,7 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 
 		netPathTcp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp6")
 
-		netFile6, err := os.Open(netPathTcp6)
+		netFile6, err := reader.Open(netPathTcp6)
 		if err != nil {
 			continue
 		}
@@ -53,7 +51,7 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 
 		netPathUdp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp")
 
-		netFileUdp4, err := os.Open(netPathUdp4)
+		netFileUdp4, err := reader.Open(netPathUdp4)
 		if err != nil {
 			continue
 		}
@@ -62,34 +60,34 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 
 		netPathUdp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp6")
 
-		netFileUdp6, err := os.Open(netPathUdp6)
+		netFileUdp6, err := reader.Open(netPathUdp6)
 		if err != nil {
 			continue
 		}
 
 		defer netFileUdp6.Close()
 
-		fds, err := iterFdDir(int(pid))
+		fds, err := iterFdDir(reader, int(pid))
 		if err != nil {
 			continue
 		}
 
-		addresses4, err := parseNetContent(netFile, filterSocketsFds(fds, pid), "tcp")
+		addresses4, err := parseNetContent(netFile, filterSocketsFds(reader, fds, pid), "tcp")
 		if err != nil {
 			continue
 		}
 
-		addresses6, err := parseNetContent(netFile6, filterSocketsFds(fds, pid), "tcp6")
+		addresses6, err := parseNetContent(netFile6, filterSocketsFds(reader, fds, pid), "tcp6")
 		if err != nil {
 			continue
 		}
 
-		addressesUdp4, err := parseNetContent(netFileUdp4, filterSocketsFds(fds, pid), "udp")
+		addressesUdp4, err := parseNetContent(netFileUdp4, filterSocketsFds(reader, fds, pid), "udp")
 
 		if err != nil {
 			continue
 		}
-		addressesUdp6, err := parseNetContent(netFileUdp6, filterSocketsFds(fds, pid), "udp6")
+		addressesUdp6, err := parseNetContent(netFileUdp6, filterSocketsFds(reader, fds, pid), "udp6")
 		if err != nil {
 			continue
 		}
@@ -107,10 +105,10 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 	return res, nil
 }
 
-func filterSocketsFds(fds []int, pid int64) []int {
+func filterSocketsFds(reader DirReader, fds []int, pid int64) []int {
 	out := make([]int, 0)
 	for _, fd := range fds {
-		realName, err := os.Readlink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
+		realName, err := reader.ReadLink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
 		if err != nil {
 			continue
 		}
@@ -127,27 +125,25 @@ func filterSocketsFds(fds []int, pid int64) []int {
 	return out
 }
 
-func iterFdDir(pid int) ([]int, error) {
+func iterFdDir(reader DirReader, pid int) ([]int, error) {
 	path := filepath.Join("/proc", strconv.Itoa(pid), "fd")
 
 	out := make([]int, 0)
 
-	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-
-		fdNo, errN := strconv.ParseInt(d.Name(), 10, 64)
-		if errN != nil {
-			return nil
-		}
-
-		out = append(out, int(fdNo))
-
-		return nil
-	})
+	d, err := reader.ReadDir(path)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, dir := range d {
+		if dir.IsDir() {
+			continue
+		}
+		fdNo, errN := strconv.ParseInt(dir.Name(), 10, 64)
+		if errN != nil {
+			continue
+		}
+		out = append(out, int(fdNo))
 	}
 
 	return out, nil
@@ -175,7 +171,8 @@ func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.Networ
 			return nil, err
 		}
 
-		if socketFd == 0 {
+		// Skip sockets with fd 0, 1, 2 (stdin, stdout, stderr)
+		if contains([]int{0, 1, 2}, socketFd) {
 			continue
 		}
 

@@ -33,3 +33,7 @@ func (r *LocalDirReader) ReadFile(filePath string) (string, error) {
 
 	return string(data), nil
 }
+
+func (l *LocalDirReader) Open(name string) (fs.File, error) {
+	return os.Open(name)
+}

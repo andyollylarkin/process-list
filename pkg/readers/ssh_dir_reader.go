@@ -99,6 +99,10 @@ func (r *SshDirReader) ReadFile(filePath string) (string, error) {
 
 }
 
+func (s *SshDirReader) Open(name string) (fs.File, error) {
+	return s.client.Open(name)
+}
+
 func newSshClient(user string, pass string, privKey []byte, privKeyPass []byte, privKeyPath string,
 	host string, port int, timeout int,
 ) (*ssh.Client, error) {
