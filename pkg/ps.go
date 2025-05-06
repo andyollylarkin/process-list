@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -34,6 +35,22 @@ func FindProcessByNameEqual(lister ProcessLister, name string) ([]Process, error
 
 	for _, p := range procs {
 		if p.Name == name {
+			res = append(res, p)
+		}
+	}
+
+	return res, nil
+}
+
+func FindProcessByRegex(lister ProcessLister, regex regexp.Regexp) ([]Process, error) {
+	res := make([]Process, 0)
+	procs, err := ListAllProcess(lister)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range procs {
+		if regex.MatchString(p.Name) {
 			res = append(res, p)
 		}
 	}
