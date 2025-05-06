@@ -12,7 +12,7 @@ func NewLinuxLocalProcessLister() *LinuxLocalProcessLister {
 	return &LinuxLocalProcessLister{}
 }
 
-func (l *LinuxLocalProcessLister) ListProcess() ([]pkg.Process, error) {
+func (l *LinuxLocalProcessLister) ListProcess(match func(int, string) bool) ([]pkg.Process, error) {
 	localReader := readers.NewLocalDirReader()
-	return internal.ParseLinux(localReader)
+	return internal.ParseLinux(localReader, match)
 }

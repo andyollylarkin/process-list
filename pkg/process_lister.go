@@ -1,5 +1,5 @@
 package pkg
 
 type ProcessLister interface {
-	ListProcess() ([]Process, error)
+	ListProcess(match func(int, string) bool) ([]Process, error)
 }

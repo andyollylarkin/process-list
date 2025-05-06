@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -13,7 +14,7 @@ import (
 	"github.com/andyollylarkin/process-list/utils"
 )
 
-func ParseLinux(reader DirReader) ([]pkg.Process, error) {
+func ParseLinux(reader DirReader, matchCondition func(int, string) bool) ([]pkg.Process, error) {
 	res := make([]pkg.Process, 0)
 	content, err := reader.ReadDir("/proc")
 	if err != nil {
@@ -29,6 +30,12 @@ func ParseLinux(reader DirReader) ([]pkg.Process, error) {
 		procName, err := reader.ReadFile(path)
 		if err != nil {
 			continue
+		}
+
+		if matchCondition != nil {
+			if !matchCondition(int(pid), strings.ReplaceAll(procName, "\n", "")) {
+				continue
+			}
 		}
 
 		netPathTcp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp")
@@ -150,8 +157,13 @@ func iterFdDir(reader DirReader, pid int) ([]int, error) {
 }
 
 func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.NetworkState, error) {
+	fullContent, err := io.ReadAll(content)
+	if err != nil {
+		return nil, err
+	}
+
 	out := make([]pkg.NetworkState, 0)
-	scanner := bufio.NewScanner(content)
+	scanner := bufio.NewScanner(bytes.NewBuffer(fullContent))
 
 	scanner.Scan() // skip first info line
 
