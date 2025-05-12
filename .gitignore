@@ -24,6 +24,7 @@ pslist
 go.work
 
 example/ps
+example/main
 
 *.swp
 .DS_Store

@@ -2,27 +2,38 @@ package main
 
 import (
 	"fmt"
-	"log"
 
-	ps "github.com/andyollylarkin/process-list"
-	"github.com/andyollylarkin/process-list/pkg"
-	"github.com/andyollylarkin/process-list/pkg/listers"
+	"github.com/andyollylarkin/process-list/pkg/net/iface"
+	"github.com/andyollylarkin/process-list/pkg/readers"
 )
 
 func main() {
-	l := listers.NewLinuxLocalProcessLister()
+	r := readers.NewLocalDirReader()
+	o := iface.NewNetSettingsObserver(r)
+	ifs, _ := o.DefaultGatewayIface()
+	fmt.Println(ifs.Name)
+	fmt.Println(ifs.Addrs())
+	// rr, err := o.RoutingTable()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	p, err := ps.FindProcessByRegex(l, "^mds.+")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// for _, r := range rr {
+	// 	_ = r
+	// }
+	// l := listers.NewLinuxLocalProcessLister()
 
-	for _, pp := range p {
-		for _, ip := range pp.Net {
-			if ip.State == pkg.SocketStateListen {
-				fmt.Printf("PsName: %s, PsPID: %d, Addr: %s\t, Network: %s \t , RawState: %s\t ,State: %s\n",
-					pp.Name, pp.Pid, ip.Addr.String(), ip.Network, ip.State, ip.State.String())
-			}
-		}
-	}
+	// p, err := ps.FindProcessByRegex(l, "^ostor-replica.+")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// for _, pp := range p {
+	// 	for _, ip := range pp.Net {
+	// 		if ip.State == pkg.SocketStateListen {
+	// 			fmt.Printf("PsName: %s, PsPID: %d, Addr: %s\t, Network: %s \t , RawState: %s\t ,State: %s\n",
+	// 				pp.Name, pp.Pid, ip.Addr.String(), ip.Network, ip.State, ip.State.String())
+	// 		}
+	// 	}
+	// }
 }

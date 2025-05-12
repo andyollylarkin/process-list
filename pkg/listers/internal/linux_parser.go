@@ -14,7 +14,7 @@ import (
 	"github.com/andyollylarkin/process-list/utils"
 )
 
-func ParseLinux(reader DirReader, matchCondition func(int, string) bool) ([]pkg.Process, error) {
+func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]pkg.Process, error) {
 	res := make([]pkg.Process, 0)
 	content, err := reader.ReadDir("/proc")
 	if err != nil {
@@ -112,7 +112,7 @@ func ParseLinux(reader DirReader, matchCondition func(int, string) bool) ([]pkg.
 	return res, nil
 }
 
-func filterSocketsFds(reader DirReader, fds []int, pid int64) []int {
+func filterSocketsFds(reader pkg.DirReader, fds []int, pid int64) []int {
 	out := make([]int, 0)
 	for _, fd := range fds {
 		realName, err := reader.ReadLink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
@@ -132,7 +132,7 @@ func filterSocketsFds(reader DirReader, fds []int, pid int64) []int {
 	return out
 }
 
-func iterFdDir(reader DirReader, pid int) ([]int, error) {
+func iterFdDir(reader pkg.DirReader, pid int) ([]int, error) {
 	path := filepath.Join("/proc", strconv.Itoa(pid), "fd")
 
 	out := make([]int, 0)
