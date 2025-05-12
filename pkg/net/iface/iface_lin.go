@@ -36,6 +36,74 @@ func NewNetSettingsObserver(dirReader pkg.DirReader) *NetSettingsObserver {
 	}
 }
 
+func (nso *NetSettingsObserver) DefaultGatewayV4() (net.IP, error) {
+	rtable, err := nso.RoutingTable()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, route := range rtable {
+		if slices.Equal(route.Dest.IP, defaultGateway) {
+			iface, err := net.InterfaceByName(route.Iface)
+			if err != nil {
+				return nil, err
+			}
+
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return nil, err
+			}
+
+			for _, addr := range addrs {
+				ipAddr, _, err := net.ParseCIDR(addr.String())
+				if err != nil {
+					continue
+				}
+
+				if ipAddr.To4() != nil {
+					return ipAddr, nil
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("default gateway not found")
+}
+
+func (nso *NetSettingsObserver) DefaultGatewayV6() (net.IP, error) {
+	rtable, err := nso.RoutingTable()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, route := range rtable {
+		if slices.Equal(route.Dest.IP, defaultGateway) {
+			iface, err := net.InterfaceByName(route.Iface)
+			if err != nil {
+				return nil, err
+			}
+
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return nil, err
+			}
+
+			for _, addr := range addrs {
+				ipAddr, _, err := net.ParseCIDR(addr.String())
+				if err != nil {
+					continue
+				}
+
+				if ipAddr.To16() != nil && ipAddr.To4() == nil {
+					return ipAddr, nil
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("default gateway not found")
+}
+
 func (nso *NetSettingsObserver) DefaultGatewayIface() (*net.Interface, error) {
 	rtable, err := nso.RoutingTable()
 	if err != nil {

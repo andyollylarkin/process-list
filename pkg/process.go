@@ -3,9 +3,10 @@ package pkg
 import "net"
 
 type NetworkState struct {
-	Addr    net.Addr
-	State   SocketState
-	Network string
+	ListenAddr net.Addr
+	PublicAddr net.IP
+	State      SocketState
+	Network    string
 }
 
 type Process struct {

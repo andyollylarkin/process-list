@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/andyollylarkin/process-list/pkg"
+	"github.com/andyollylarkin/process-list/pkg/net/iface"
 	"github.com/andyollylarkin/process-list/utils"
 )
 
@@ -20,6 +21,8 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 	if err != nil {
 		return nil, err
 	}
+
+	v4ip, err := (iface.NewNetSettingsObserver(reader)).DefaultGatewayV4()
 
 	for _, d := range content {
 		pid, err := strconv.ParseInt(d.Name(), 10, 0)
@@ -100,6 +103,10 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 		}
 
 		allAddresses := append(append(addresses4, addresses6...), append(addressesUdp4, addressesUdp6...)...)
+
+		for i := range allAddresses {
+			allAddresses[i].PublicAddr = v4ip
+		}
 
 		res = append(res, pkg.Process{
 			Pid:  int(pid),
@@ -200,9 +207,9 @@ func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.Networ
 		state := pkg.SocketState(fields[3])
 
 		out = append(out, pkg.NetworkState{
-			Addr:    addr,
-			State:   pkg.SocketState(state),
-			Network: network,
+			ListenAddr: addr,
+			State:      pkg.SocketState(state),
+			Network:    network,
 		})
 	}
 
