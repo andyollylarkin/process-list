@@ -31,6 +31,10 @@ func (r *LocalDirReader) ReadFile(filePath string) (string, error) {
 		return "", err
 	}
 
+	defer file.Close()
+
+	// properly format the data. some files may contain null bytes
+	// which can be interpreted as the strings delimiter in some cases
 	return string(data), nil
 }
 

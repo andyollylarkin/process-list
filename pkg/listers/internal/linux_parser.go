@@ -118,7 +118,7 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			Name:    strings.ReplaceAll(procName, "\n", ""),
 			Net:     allAddresses,
 			Fds:     fds,
-			Cmdline: strings.ReplaceAll(cmdlineContent, "\n", ""),
+			Cmdline: string(bytes.ReplaceAll([]byte(cmdlineContent), []byte{0}, []byte(" "))),
 		})
 	}
 
