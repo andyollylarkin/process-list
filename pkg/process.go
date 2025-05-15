@@ -10,8 +10,9 @@ type NetworkState struct {
 }
 
 type Process struct {
-	Pid  int
-	Name string
-	Fds  []int
-	Net  []NetworkState
+	Pid     int
+	Name    string
+	Cmdline string
+	Fds     []int
+	Net     []NetworkState
 }

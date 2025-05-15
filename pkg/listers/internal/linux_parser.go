@@ -41,6 +41,11 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			}
 		}
 
+		cmdlineContent, err := reader.ReadFile(filepath.Join("/proc", d.Name(), "cmdline"))
+		if err != nil {
+			continue
+		}
+
 		netPathTcp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp")
 
 		netFile, err := reader.Open(netPathTcp4)
@@ -109,10 +114,11 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 		}
 
 		res = append(res, pkg.Process{
-			Pid:  int(pid),
-			Name: strings.ReplaceAll(procName, "\n", ""),
-			Net:  allAddresses,
-			Fds:  fds,
+			Pid:     int(pid),
+			Name:    strings.ReplaceAll(procName, "\n", ""),
+			Net:     allAddresses,
+			Fds:     fds,
+			Cmdline: strings.ReplaceAll(cmdlineContent, "\n", ""),
 		})
 	}
 
@@ -214,6 +220,10 @@ func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.Networ
 	}
 
 	return out, nil
+}
+
+func handleProcessError(err error, findSingleProcess bool) {
+	return
 }
 
 func parseIpAndPort(text string) (string, string, error) {
