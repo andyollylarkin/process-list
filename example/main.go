@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"runtime/pprof"
 
 	ps "github.com/andyollylarkin/process-list"
 	"github.com/andyollylarkin/process-list/pkg"
@@ -11,13 +13,24 @@ import (
 
 func main() {
 	l := listers.NewLinuxLocalProcessLister()
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
 
-	p, err := ps.FindProcessByRegex(l, "^shaman.+")
+	if err = pprof.StartCPUProfile(f); err != nil {
+		log.Fatal(err)
+	}
+
+	processes, err := ps.FindProcessByRegex(l, "^(mds|cs).+")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, pp := range p {
+	pprof.StopCPUProfile()
+
+	for _, pp := range processes {
 		for _, ip := range pp.Net {
 			if ip.State == pkg.SocketStateListen {
 				fmt.Printf("PsName: %s, PsPID: %d, PubAddr: %s\t, \t ListenAddr %d\t ,Network: %s \t , RawState: %s\t ,State: %s\n",

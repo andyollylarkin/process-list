@@ -23,6 +23,9 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 	}
 
 	v4ip, err := (iface.NewNetSettingsObserver(reader)).DefaultGatewayV4()
+	if err != nil {
+		return nil, err
+	}
 
 	for _, d := range content {
 		pid, err := strconv.ParseInt(d.Name(), 10, 0)
@@ -53,16 +56,12 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			continue
 		}
 
-		defer netFile.Close()
-
 		netPathTcp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp6")
 
 		netFile6, err := reader.Open(netPathTcp6)
 		if err != nil {
 			continue
 		}
-
-		defer netFile6.Close()
 
 		netPathUdp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp")
 
@@ -71,8 +70,6 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			continue
 		}
 
-		defer netFileUdp4.Close()
-
 		netPathUdp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp6")
 
 		netFileUdp6, err := reader.Open(netPathUdp6)
@@ -80,32 +77,36 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			continue
 		}
 
-		defer netFileUdp6.Close()
-
 		fds, err := iterFdDir(reader, int(pid))
 		if err != nil {
 			continue
 		}
 
-		addresses4, err := parseNetContent(netFile, filterSocketsFds(reader, fds, pid), "tcp")
+		sockets := filterSocketsFds(reader, fds, pid)
+
+		addresses4, err := parseNetContent(netFile, sockets, "tcp")
 		if err != nil {
 			continue
 		}
 
-		addresses6, err := parseNetContent(netFile6, filterSocketsFds(reader, fds, pid), "tcp6")
+		addresses6, err := parseNetContent(netFile6, sockets, "tcp6")
 		if err != nil {
 			continue
 		}
 
-		addressesUdp4, err := parseNetContent(netFileUdp4, filterSocketsFds(reader, fds, pid), "udp")
+		addressesUdp4, err := parseNetContent(netFileUdp4, sockets, "udp")
+		if err != nil {
+			continue
+		}
+		addressesUdp6, err := parseNetContent(netFileUdp6, sockets, "udp6")
+		if err != nil {
+			continue
+		}
 
-		if err != nil {
-			continue
-		}
-		addressesUdp6, err := parseNetContent(netFileUdp6, filterSocketsFds(reader, fds, pid), "udp6")
-		if err != nil {
-			continue
-		}
+		_ = netFile.Close()
+		_ = netFileUdp4.Close()
+		_ = netFileUdp6.Close()
+		_ = netFile6.Close()
 
 		allAddresses := append(append(addresses4, addresses6...), append(addressesUdp4, addressesUdp6...)...)
 
