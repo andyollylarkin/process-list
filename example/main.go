@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"time"
 
 	ps "github.com/andyollylarkin/process-list"
-	"github.com/andyollylarkin/process-list/pkg"
 	"github.com/andyollylarkin/process-list/pkg/listers"
 )
 
@@ -23,19 +23,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	processes, err := ps.FindProcessByRegex(l, "^(mds|cs).+")
+	start := time.Now()
+
+	processes, err := ps.FindProcessByRegex(l, "load-example")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	elapsed := time.Since(start)
+
 	pprof.StopCPUProfile()
 
-	for _, pp := range processes {
-		for _, ip := range pp.Net {
-			if ip.State == pkg.SocketStateListen {
-				fmt.Printf("PsName: %s, PsPID: %d, PubAddr: %s\t, \t ListenAddr %d\t ,Network: %s \t , RawState: %s\t ,State: %s\n",
-					pp.Name, pp.Pid, ip.PublicAddr, ip.ListenAddr, ip.Network, ip.State, ip.State.String())
-			}
-		}
-	}
+	fmt.Printf("Found %d processes in %s\n", len(processes), elapsed.String())
 }
