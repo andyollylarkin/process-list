@@ -27,6 +27,11 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 		return nil, err
 	}
 
+	netSnapshot, err := parseAllNetFiles(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, d := range content {
 		pid, err := strconv.ParseInt(d.Name(), 10, 0)
 		if err != nil {
@@ -49,66 +54,13 @@ func ParseLinux(reader pkg.DirReader, matchCondition func(int, string) bool) ([]
 			continue
 		}
 
-		netPathTcp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp")
-
-		netFile, err := reader.Open(netPathTcp4)
-		if err != nil {
-			continue
-		}
-
-		netPathTcp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "tcp6")
-
-		netFile6, err := reader.Open(netPathTcp6)
-		if err != nil {
-			continue
-		}
-
-		netPathUdp4 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp")
-
-		netFileUdp4, err := reader.Open(netPathUdp4)
-		if err != nil {
-			continue
-		}
-
-		netPathUdp6 := filepath.Join("/proc", strconv.Itoa(int(pid)), "net", "udp6")
-
-		netFileUdp6, err := reader.Open(netPathUdp6)
-		if err != nil {
-			continue
-		}
-
 		fds, err := iterFdDir(reader, int(pid))
 		if err != nil {
 			continue
 		}
 
-		sockets := filterSocketsFds(reader, fds, pid)
-
-		addresses4, err := parseNetContent(netFile, sockets, "tcp")
-		if err != nil {
-			continue
-		}
-
-		addresses6, err := parseNetContent(netFile6, sockets, "tcp6")
-		if err != nil {
-			continue
-		}
-
-		addressesUdp4, err := parseNetContent(netFileUdp4, sockets, "udp")
-		if err != nil {
-			continue
-		}
-		addressesUdp6, err := parseNetContent(netFileUdp6, sockets, "udp6")
-		if err != nil {
-			continue
-		}
-
-		_ = netFile.Close()
-		_ = netFileUdp4.Close()
-		_ = netFileUdp6.Close()
-		_ = netFile6.Close()
-
-		allAddresses := append(append(addresses4, addresses6...), append(addressesUdp4, addressesUdp6...)...)
+		socketInodes := filterSocketsFds(reader, fds, pid)
+		allAddresses := lookupByInodes(netSnapshot, socketInodes)
 
 		for i := range allAddresses {
 			allAddresses[i].PublicAddr = v4ip
@@ -170,16 +122,46 @@ func iterFdDir(reader pkg.DirReader, pid int) ([]int, error) {
 	return out, nil
 }
 
-func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.NetworkState, error) {
+func parseAllNetFiles(reader pkg.DirReader) (map[int]pkg.NetworkState, error) {
+	result := make(map[int]pkg.NetworkState)
+
+	protocols := []struct {
+		path    string
+		network string
+	}{
+		{"/proc/self/net/tcp", "tcp"},
+		{"/proc/self/net/tcp6", "tcp6"},
+		{"/proc/self/net/udp", "udp"},
+		{"/proc/self/net/udp6", "udp6"},
+	}
+
+	for _, p := range protocols {
+		f, err := reader.Open(p.path)
+		if err != nil {
+			continue
+		}
+		entries, err := parseNetFile(f, p.network)
+		_ = f.Close()
+		if err != nil {
+			continue
+		}
+		for inode, entry := range entries {
+			result[inode] = entry
+		}
+	}
+
+	return result, nil
+}
+
+func parseNetFile(content io.Reader, network string) (map[int]pkg.NetworkState, error) {
 	fullContent, err := io.ReadAll(content)
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]pkg.NetworkState, 0)
+	out := make(map[int]pkg.NetworkState)
 	scanner := bufio.NewScanner(bytes.NewBuffer(fullContent))
-
-	scanner.Scan() // skip first info line
+	scanner.Scan() // skip header line
 
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
@@ -189,20 +171,15 @@ func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.Networ
 
 		ip, port, err := parseIpAndPort(fields[1])
 		if err != nil {
-			return nil, err
-		}
-
-		socketFd, err := strconv.Atoi(fields[9])
-		if err != nil {
-			return nil, err
-		}
-
-		// Skip sockets with fd 0, 1, 2 (stdin, stdout, stderr)
-		if contains([]int{0, 1, 2}, socketFd) {
 			continue
 		}
 
-		if !contains(fds, socketFd) {
+		inode, err := strconv.Atoi(fields[9])
+		if err != nil {
+			continue
+		}
+
+		if inode == 0 {
 			continue
 		}
 
@@ -211,20 +188,24 @@ func parseNetContent(content io.Reader, fds []int, network string) ([]pkg.Networ
 			continue
 		}
 
-		state := pkg.SocketState(fields[3])
-
-		out = append(out, pkg.NetworkState{
+		out[inode] = pkg.NetworkState{
 			ListenAddr: addr,
-			State:      pkg.SocketState(state),
+			State:      pkg.SocketState(fields[3]),
 			Network:    network,
-		})
+		}
 	}
 
 	return out, nil
 }
 
-func handleProcessError(err error, findSingleProcess bool) {
-	return
+func lookupByInodes(snapshot map[int]pkg.NetworkState, inodes []int) []pkg.NetworkState {
+	out := make([]pkg.NetworkState, 0, len(inodes))
+	for _, inode := range inodes {
+		if entry, ok := snapshot[inode]; ok {
+			out = append(out, entry)
+		}
+	}
+	return out
 }
 
 func parseIpAndPort(text string) (string, string, error) {
@@ -243,13 +224,4 @@ func parseIpAndPort(text string) (string, string, error) {
 	}
 
 	return ip, port, nil
-}
-
-func contains(slice []int, item int) bool {
-	for _, v := range slice {
-		if v == item {
-			return true
-		}
-	}
-	return false
 }

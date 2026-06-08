@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"os"
 	"os/signal"
 	"syscall"
 )
@@ -14,6 +15,11 @@ func main() {
 			panic(err)
 		}
 		_ = l
+	}
+
+	for range 1000 {
+		f, _ := os.Open("/dev/null")
+		_ = f
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
